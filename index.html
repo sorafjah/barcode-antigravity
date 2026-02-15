@@ -1,548 +1,613 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>100均レジ</title>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<style>
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>100均レジ</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-  body {
-    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif;
-    background-color: #FFF8E1;
-    color: #333;
-    min-height: 100dvh;
-    overflow-x: hidden;
-  }
+        body {
+            font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif;
+            background-color: #FFF8E1;
+            color: #333;
+            min-height: 100dvh;
+            overflow-x: hidden;
+        }
 
-  /* ========== スタート画面 ========== */
-  #start-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100dvh;
-    padding: 24px;
-    text-align: center;
-  }
+        /* ========== スタート画面 ========== */
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100dvh;
+            padding: 24px;
+            text-align: center;
+        }
 
-  #start-screen h1 {
-    font-size: 36px;
-    color: #E65100;
-    margin-bottom: 12px;
-  }
+        #start-screen h1 {
+            font-size: 36px;
+            color: #E65100;
+            margin-bottom: 12px;
+        }
 
-  #start-screen p {
-    font-size: 18px;
-    color: #666;
-    margin-bottom: 40px;
-    line-height: 1.6;
-  }
+        #start-screen p {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
 
-  #start-btn {
-    font-size: 28px;
-    font-weight: bold;
-    color: #fff;
-    background-color: #FF6D00;
-    border: none;
-    border-radius: 16px;
-    padding: 24px 48px;
-    cursor: pointer;
-    box-shadow: 0 4px 0 #BF360C;
-    transition: transform 0.1s;
-    -webkit-tap-highlight-color: transparent;
-  }
+        #start-btn {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #FF6D00;
+            border: none;
+            border-radius: 16px;
+            padding: 24px 48px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #BF360C;
+            transition: transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-  #start-btn:active {
-    transform: translateY(3px);
-    box-shadow: 0 1px 0 #BF360C;
-  }
+        #start-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #BF360C;
+        }
 
-  /* ========== メイン画面 ========== */
-  #main-screen {
-    display: none;
-    flex-direction: column;
-    min-height: 100dvh;
-  }
+        /* ========== メイン画面 ========== */
+        #main-screen {
+            display: none;
+            flex-direction: column;
+            min-height: 100dvh;
+        }
 
-  /* ヘッダー（合計・個数） */
-  .header {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    padding: 12px 12px 8px;
-    background-color: #FF6D00;
-  }
+        /* ヘッダー（合計・個数） */
+        .header {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px 12px 8px;
+            background-color: #FF6D00;
+        }
 
-  .info-box {
-    flex: 1;
-    max-width: 200px;
-    background-color: #fff;
-    border-radius: 12px;
-    padding: 10px 8px;
-    text-align: center;
-  }
+        .info-box {
+            flex: 1;
+            max-width: 200px;
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 10px 8px;
+            text-align: center;
+        }
 
-  .info-label {
-    font-size: 14px;
-    font-weight: bold;
-    color: #999;
-    margin-bottom: 2px;
-  }
+        .info-label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #999;
+            margin-bottom: 2px;
+        }
 
-  .info-value {
-    font-size: 32px;
-    font-weight: bold;
-    color: #E65100;
-  }
+        .info-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #E65100;
+        }
 
-  /* 商品名 */
-  .product-name {
-    text-align: center;
-    padding: 8px;
-    background-color: #FF6D00;
-    color: #fff;
-    font-size: 16px;
-    font-weight: bold;
-  }
+        /* 商品名 */
+        .product-name {
+            text-align: center;
+            padding: 8px;
+            background-color: #FF6D00;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+        }
 
-  /* スキャナーエリア */
-  .scanner-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-    background-color: #FFF8E1;
-  }
+        /* スキャナーエリア */
+        .scanner-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            background-color: #FFF8E1;
+        }
 
-  #reader {
-    width: 100%;
-    max-width: 400px;
-    border-radius: 12px;
-    overflow: hidden;
-  }
+        #reader {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
 
-  #reader video {
-    border-radius: 12px;
-  }
+        #reader video {
+            border-radius: 12px;
+        }
 
-  .scan-message {
-    margin-top: 10px;
-    font-size: 18px;
-    font-weight: bold;
-    color: #E65100;
-    min-height: 28px;
-    text-align: center;
-  }
+        .scan-message {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #E65100;
+            min-height: 28px;
+            text-align: center;
+        }
 
-  /* ボタンエリア */
-  .button-area {
-    padding: 12px;
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    background-color: #FFF8E1;
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-  }
+        /* ボタンエリア */
+        .button-area {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            background-color: #FFF8E1;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+        }
 
-  .btn-pay {
-    flex: 1;
-    max-width: 220px;
-    font-size: 24px;
-    font-weight: bold;
-    color: #fff;
-    background-color: #1976D2;
-    border: none;
-    border-radius: 14px;
-    padding: 18px 12px;
-    cursor: pointer;
-    box-shadow: 0 4px 0 #0D47A1;
-    transition: transform 0.1s;
-    -webkit-tap-highlight-color: transparent;
-  }
+        .btn-pay {
+            flex: 1;
+            max-width: 220px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #7CB342;
+            border: none;
+            border-radius: 14px;
+            padding: 18px 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #558B2F;
+            transition: transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-  .btn-pay:active {
-    transform: translateY(3px);
-    box-shadow: 0 1px 0 #0D47A1;
-  }
+        .btn-pay:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #558B2F;
+        }
 
-  .btn-pay:disabled {
-    background-color: #B0BEC5;
-    box-shadow: 0 4px 0 #78909C;
-    cursor: default;
-  }
+        .btn-pay:disabled {
+            background-color: #B0BEC5;
+            box-shadow: 0 4px 0 #78909C;
+            cursor: default;
+        }
 
-  /* ========== お支払い画面（オーバーレイ） ========== */
-  #payment-screen {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0,0,0,0.5);
-    z-index: 100;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-  }
+        .btn-cancel {
+            flex: 1;
+            max-width: 220px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #9E9E9E;
+            border: none;
+            border-radius: 14px;
+            padding: 14px 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #616161;
+            transition: transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-  .payment-card {
-    background-color: #fff;
-    border-radius: 20px;
-    padding: 32px 24px;
-    text-align: center;
-    width: 100%;
-    max-width: 400px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-  }
+        .btn-cancel:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #616161;
+        }
 
-  .payment-card .pay-label {
-    font-size: 22px;
-    font-weight: bold;
-    color: #666;
-    margin-bottom: 8px;
-  }
+        .btn-cancel:disabled {
+            background-color: #E0E0E0;
+            box-shadow: 0 4px 0 #BDBDBD;
+            color: #fff;
+            cursor: default;
+        }
 
-  .payment-card .pay-total {
-    font-size: 52px;
-    font-weight: bold;
-    color: #E65100;
-    margin-bottom: 8px;
-  }
+        /* ========== お支払い画面（オーバーレイ） ========== */
+        #payment-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
 
-  .payment-card .pay-count {
-    font-size: 18px;
-    color: #999;
-    margin-bottom: 28px;
-  }
+        .payment-card {
+            background-color: #fff;
+            border-radius: 20px;
+            padding: 32px 24px;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
 
-  .btn-next {
-    width: 100%;
-    font-size: 24px;
-    font-weight: bold;
-    color: #fff;
-    background-color: #43A047;
-    border: none;
-    border-radius: 14px;
-    padding: 20px 12px;
-    cursor: pointer;
-    box-shadow: 0 4px 0 #1B5E20;
-    transition: transform 0.1s;
-    -webkit-tap-highlight-color: transparent;
-  }
+        .payment-card .pay-label {
+            font-size: 22px;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 8px;
+        }
 
-  .btn-next:active {
-    transform: translateY(3px);
-    box-shadow: 0 1px 0 #1B5E20;
-  }
+        .payment-card .pay-total {
+            font-size: 38px;
+            font-weight: bold;
+            color: #E65100;
+            margin-bottom: 8px;
+        }
 
-  /* スキャン時のフラッシュ */
-  .flash {
-    animation: flashAnim 0.3s ease-out;
-  }
+        .payment-card .pay-count {
+            font-size: 18px;
+            color: #999;
+            margin-bottom: 28px;
+        }
 
-  @keyframes flashAnim {
-    0%   { background-color: #FFCC80; }
-    100% { background-color: #fff; }
-  }
+        .btn-next {
+            width: 100%;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #43A047;
+            border: none;
+            border-radius: 14px;
+            padding: 20px 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #1B5E20;
+            transition: transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-  /* html5-qrcode の不要UIを非表示 */
-  #reader__dashboard_section_swaplink,
-  #reader__filescan_input,
-  #reader__dashboard_section_fsr,
-  #reader__status_span,
-  #reader img[alt="Info icon"] {
-    display: none !important;
-  }
+        .btn-next:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #1B5E20;
+        }
 
-  #reader__dashboard {
-    display: none !important;
-  }
+        /* スキャン時のフラッシュ */
+        .flash {
+            animation: flashAnim 0.3s ease-out;
+        }
 
-  #reader__scan_region {
-    border: none !important;
-  }
+        @keyframes flashAnim {
+            0% {
+                background-color: #FFCC80;
+            }
 
-  #reader__scan_region video {
-    border-radius: 12px;
-  }
+            100% {
+                background-color: #fff;
+            }
+        }
 
-  #reader__header_message {
-    display: none !important;
-  }
-</style>
+        /* html5-qrcode の不要UIを非表示 */
+        #reader__dashboard_section_swaplink,
+        #reader__filescan_input,
+        #reader__dashboard_section_fsr,
+        #reader__status_span,
+        #reader img[alt="Info icon"] {
+            display: none !important;
+        }
+
+        #reader__dashboard {
+            display: none !important;
+        }
+
+        #reader__scan_region {
+            border: none !important;
+        }
+
+        #reader__scan_region video {
+            border-radius: 12px;
+        }
+
+        #reader__header_message {
+            display: none !important;
+        }
+    </style>
 </head>
+
 <body>
 
-<!-- ===== スタート画面 ===== -->
-<div id="start-screen">
-  <h1>100均レジ</h1>
-  <p>バーコードをスキャンして<br>レジごっこをしよう！</p>
-  <button id="start-btn" onclick="startApp()">レジをはじめる</button>
-</div>
-
-<!-- ===== メイン画面 ===== -->
-<div id="main-screen">
-  <!-- ヘッダー -->
-  <div class="header">
-    <div class="info-box" id="total-box">
-      <div class="info-label">合計金額</div>
-      <div class="info-value" id="total-display">0円</div>
+    <!-- ===== スタート画面 ===== -->
+    <div id="start-screen">
+        <h1>100均レジ</h1>
+        <p>バーコードをスキャンして<br>レジごっこをしよう！</p>
+        <button id="start-btn" onclick="startApp()">レジをはじめる</button>
     </div>
-    <div class="info-box">
-      <div class="info-label">スキャン数</div>
-      <div class="info-value" id="count-display">0個</div>
+
+    <!-- ===== メイン画面 ===== -->
+    <div id="main-screen">
+        <!-- ヘッダー -->
+        <div class="header">
+            <div class="info-box" id="total-box">
+                <div class="info-label">合計金額</div>
+                <div class="info-value" id="total-display">0円</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">スキャン数</div>
+                <div class="info-value" id="count-display">0個</div>
+            </div>
+        </div>
+        <div class="product-name">商品：100円ショップの商品（税込110円）</div>
+
+        <!-- スキャナー -->
+        <div class="scanner-area">
+            <div id="reader"></div>
+            <div class="scan-message" id="scan-msg">バーコードをかざしてください</div>
+        </div>
+
+        <!-- ボタン -->
+        <div class="button-area">
+            <button class="btn-pay" id="pay-btn" onclick="showPayment()" disabled>お支払い</button>
+            <button class="btn-cancel" id="cancel-btn" onclick="cancelScan()" disabled>キャンセル</button>
+        </div>
     </div>
-  </div>
-  <div class="product-name">商品：100円ショップの商品（税込110円）</div>
 
-  <!-- スキャナー -->
-  <div class="scanner-area">
-    <div id="reader"></div>
-    <div class="scan-message" id="scan-msg">バーコードをかざしてください</div>
-  </div>
+    <!-- ===== お支払い画面 ===== -->
+    <div id="payment-screen">
+        <div class="payment-card">
+            <div class="pay-label">お会計</div>
+            <div class="pay-total" id="pay-total">0円</div>
+            <div class="pay-count" id="pay-count">0個</div>
+            <button class="btn-next" onclick="resetApp()">ありがとうございました</button>
+        </div>
+    </div>
 
-  <!-- ボタン -->
-  <div class="button-area">
-    <button class="btn-pay" id="pay-btn" onclick="showPayment()" disabled>お支払い</button>
-  </div>
-</div>
+    <script>
+        // ===== 状態管理 =====
+        let totalAmount = 0;
+        let scanCount = 0;
+        let html5QrCode = null;
+        let isScanning = false;
+        let lastScanTime = 0;
+        let audioCtx = null;
 
-<!-- ===== お支払い画面 ===== -->
-<div id="payment-screen">
-  <div class="payment-card">
-    <div class="pay-label">お会計</div>
-    <div class="pay-total" id="pay-total">0円</div>
-    <div class="pay-count" id="pay-count">0個</div>
-    <button class="btn-next" onclick="resetApp()">つぎの人</button>
-  </div>
-</div>
+        // ===== 要素取得 =====
+        const startScreen = document.getElementById('start-screen');
+        const mainScreen = document.getElementById('main-screen');
+        const paymentScreen = document.getElementById('payment-screen');
+        const totalDisplay = document.getElementById('total-display');
+        const countDisplay = document.getElementById('count-display');
+        const totalBox = document.getElementById('total-box');
+        const scanMsg = document.getElementById('scan-msg');
+        const payBtn = document.getElementById('pay-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const payTotal = document.getElementById('pay-total');
+        const payCount = document.getElementById('pay-count');
 
-<script>
-  // ===== 状態管理 =====
-  let totalAmount = 0;
-  let scanCount = 0;
-  let html5QrCode = null;
-  let isScanning = false;
-  let lastScanTime = 0;
-  let audioCtx = null;
+        // ===== アプリ開始 =====
+        async function startApp() {
+            // AudioContext を初期化（iOS対策：ユーザー操作起点で作成）
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                // iOS では resume が必要
+                if (audioCtx.state === 'suspended') {
+                    await audioCtx.resume();
+                }
+                // ダミー音を再生してロック解除
+                playBeep(0.01);
+            } catch (e) {
+                console.warn('AudioContext init failed:', e);
+            }
 
-  // ===== 要素取得 =====
-  const startScreen   = document.getElementById('start-screen');
-  const mainScreen    = document.getElementById('main-screen');
-  const paymentScreen = document.getElementById('payment-screen');
-  const totalDisplay  = document.getElementById('total-display');
-  const countDisplay  = document.getElementById('count-display');
-  const totalBox      = document.getElementById('total-box');
-  const scanMsg       = document.getElementById('scan-msg');
-  const payBtn        = document.getElementById('pay-btn');
-  const payTotal      = document.getElementById('pay-total');
-  const payCount      = document.getElementById('pay-count');
+            // Speech API の初期化（iOS対策：ユーザー操作起点で呼ぶ）
+            try {
+                const u = new SpeechSynthesisUtterance('');
+                u.volume = 0;
+                speechSynthesis.speak(u);
+            } catch (e) {
+                console.warn('SpeechSynthesis init failed:', e);
+            }
 
-  // ===== アプリ開始 =====
-  async function startApp() {
-    // AudioContext を初期化（iOS対策：ユーザー操作起点で作成）
-    try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      // iOS では resume が必要
-      if (audioCtx.state === 'suspended') {
-        await audioCtx.resume();
-      }
-      // ダミー音を再生してロック解除
-      playBeep(0.01);
-    } catch (e) {
-      console.warn('AudioContext init failed:', e);
-    }
+            // 画面切り替え
+            startScreen.style.display = 'none';
+            mainScreen.style.display = 'flex';
 
-    // Speech API の初期化（iOS対策：ユーザー操作起点で呼ぶ）
-    try {
-      const u = new SpeechSynthesisUtterance('');
-      u.volume = 0;
-      speechSynthesis.speak(u);
-    } catch (e) {
-      console.warn('SpeechSynthesis init failed:', e);
-    }
+            // スキャン開始
+            startScanner();
+        }
 
-    // 画面切り替え
-    startScreen.style.display = 'none';
-    mainScreen.style.display = 'flex';
+        // ===== スキャナー開始 =====
+        async function startScanner() {
+            if (html5QrCode) {
+                try { await html5QrCode.stop(); } catch (e) { }
+                html5QrCode.clear();
+            }
 
-    // スキャン開始
-    startScanner();
-  }
+            html5QrCode = new Html5Qrcode('reader');
 
-  // ===== スキャナー開始 =====
-  async function startScanner() {
-    if (html5QrCode) {
-      try { await html5QrCode.stop(); } catch(e) {}
-      html5QrCode.clear();
-    }
+            const config = {
+                fps: 10,
+                qrbox: { width: 280, height: 120 },
+                aspectRatio: 1.0,
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.EAN_8,
+                    Html5QrcodeSupportedFormats.UPC_A,
+                    Html5QrcodeSupportedFormats.UPC_E,
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.QR_CODE,
+                    Html5QrcodeSupportedFormats.ITF,
+                ]
+            };
 
-    html5QrCode = new Html5Qrcode('reader');
+            try {
+                await html5QrCode.start(
+                    { facingMode: 'environment' },
+                    config,
+                    onScanSuccess,
+                    () => { } // エラーは無視
+                );
+                isScanning = true;
+                scanMsg.textContent = 'バーコードをかざしてください';
+            } catch (err) {
+                console.error('カメラ起動エラー:', err);
+                scanMsg.textContent = 'カメラを起動できませんでした';
+            }
+        }
 
-    const config = {
-      fps: 10,
-      qrbox: { width: 280, height: 120 },
-      aspectRatio: 1.0,
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.ITF,
-      ]
-    };
+        // ===== スキャン成功時 =====
+        function onScanSuccess(decodedText, decodedResult) {
+            // 連続スキャン防止（1.5秒以内は無視）
+            const now = Date.now();
+            if (now - lastScanTime < 1500) return;
+            lastScanTime = now;
 
-    try {
-      await html5QrCode.start(
-        { facingMode: 'environment' },
-        config,
-        onScanSuccess,
-        () => {} // エラーは無視
-      );
-      isScanning = true;
-      scanMsg.textContent = 'バーコードをかざしてください';
-    } catch (err) {
-      console.error('カメラ起動エラー:', err);
-      scanMsg.textContent = 'カメラを起動できませんでした';
-    }
-  }
+            // 金額加算
+            scanCount++;
+            totalAmount += 110;
 
-  // ===== スキャン成功時 =====
-  function onScanSuccess(decodedText, decodedResult) {
-    // 連続スキャン防止（1.5秒以内は無視）
-    const now = Date.now();
-    if (now - lastScanTime < 1500) return;
-    lastScanTime = now;
+            // 表示更新
+            totalDisplay.textContent = totalAmount.toLocaleString() + '円';
+            countDisplay.textContent = scanCount + '個';
 
-    // 金額加算
-    scanCount++;
-    totalAmount += 110;
+            // ボタン有効化
+            payBtn.disabled = false;
+            cancelBtn.disabled = false;
 
-    // 表示更新
-    totalDisplay.textContent = totalAmount.toLocaleString() + '円';
-    countDisplay.textContent = scanCount + '個';
+            // メッセージ
+            scanMsg.textContent = scanCount + '点目をスキャンしました';
 
-    // お支払いボタン有効化
-    payBtn.disabled = false;
+            // フラッシュアニメーション
+            totalBox.classList.remove('flash');
+            void totalBox.offsetWidth;
+            totalBox.classList.add('flash');
 
-    // メッセージ
-    scanMsg.textContent = scanCount + '点目をスキャンしました';
+            // ピッ音 → 読み上げ
+            playBeep(0.3);
+            setTimeout(() => {
+                speakPrice();
+            }, 300);
+        }
 
-    // フラッシュアニメーション
-    totalBox.classList.remove('flash');
-    void totalBox.offsetWidth;
-    totalBox.classList.add('flash');
+        // ===== ピッ音（Web Audio API） =====
+        function playBeep(volume) {
+            if (!audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(1800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.15);
+            } catch (e) {
+                console.warn('Beep error:', e);
+            }
+        }
 
-    // ピッ音 → 読み上げ
-    playBeep(0.3);
-    setTimeout(() => {
-      speakPrice();
-    }, 300);
-  }
+        // ===== 音声読み上げ（Web Speech API） =====
+        function speakPrice() {
+            try {
+                speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance('ひゃくじゅうえん');
+                u.lang = 'ja-JP';
+                u.rate = 1.0;
+                u.volume = 1.0;
+                speechSynthesis.speak(u);
+            } catch (e) {
+                console.warn('Speech error:', e);
+            }
+        }
 
-  // ===== ピッ音（Web Audio API） =====
-  function playBeep(volume) {
-    if (!audioCtx) return;
-    try {
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      oscillator.type = 'square';
-      oscillator.frequency.setValueAtTime(1800, audioCtx.currentTime);
-      gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      oscillator.start(audioCtx.currentTime);
-      oscillator.stop(audioCtx.currentTime + 0.15);
-    } catch (e) {
-      console.warn('Beep error:', e);
-    }
-  }
+        // ===== キャンセル（1点取り消し） =====
+        function cancelScan() {
+            if (scanCount <= 0) return;
 
-  // ===== 音声読み上げ（Web Speech API） =====
-  function speakPrice() {
-    try {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance('ひゃくじゅうえん');
-      u.lang = 'ja-JP';
-      u.rate = 1.0;
-      u.volume = 1.0;
-      speechSynthesis.speak(u);
-    } catch (e) {
-      console.warn('Speech error:', e);
-    }
-  }
+            scanCount--;
+            totalAmount -= 110;
 
-  // ===== お支払い =====
-  async function showPayment() {
-    // スキャン停止
-    if (html5QrCode && isScanning) {
-      try {
-        await html5QrCode.stop();
-        isScanning = false;
-      } catch (e) {}
-    }
+            totalDisplay.textContent = totalAmount > 0 ? totalAmount.toLocaleString() + '円' : '0円';
+            countDisplay.textContent = scanCount + '個';
 
-    // 表示
-    payTotal.textContent = '合計 ' + totalAmount.toLocaleString() + '円';
-    payCount.textContent = scanCount + '点のお買い上げ';
-    paymentScreen.style.display = 'flex';
+            if (scanCount === 0) {
+                payBtn.disabled = true;
+                cancelBtn.disabled = true;
+                scanMsg.textContent = 'バーコードをかざしてください';
+            } else {
+                scanMsg.textContent = '1点キャンセルしました';
+            }
 
-    // 合計を読み上げ
-    try {
-      speechSynthesis.cancel();
-      const text = 'おかいけい、' + totalAmount + 'えん です';
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'ja-JP';
-      u.rate = 0.9;
-      u.volume = 1.0;
-      speechSynthesis.speak(u);
-    } catch (e) {}
-  }
+            // フラッシュ
+            totalBox.classList.remove('flash');
+            void totalBox.offsetWidth;
+            totalBox.classList.add('flash');
+        }
 
-  // ===== リセット（つぎの人） =====
-  async function resetApp() {
-    // 読み上げ
-    try {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance('ありがとうございました');
-      u.lang = 'ja-JP';
-      u.rate = 0.9;
-      u.volume = 1.0;
-      speechSynthesis.speak(u);
-    } catch (e) {}
+        // ===== お支払い =====
+        async function showPayment() {
+            // スキャン停止
+            if (html5QrCode && isScanning) {
+                try {
+                    await html5QrCode.stop();
+                    isScanning = false;
+                } catch (e) { }
+            }
 
-    // 状態リセット
-    totalAmount = 0;
-    scanCount = 0;
-    lastScanTime = 0;
+            // 表示
+            payTotal.textContent = '合計 ' + totalAmount.toLocaleString() + '円';
+            payCount.textContent = scanCount + '点のお買い上げ';
+            paymentScreen.style.display = 'flex';
 
-    // 表示リセット
-    totalDisplay.textContent = '0円';
-    countDisplay.textContent = '0個';
-    payBtn.disabled = true;
-    scanMsg.textContent = 'バーコードをかざしてください';
+            // 合計を読み上げ
+            try {
+                speechSynthesis.cancel();
+                const text = 'おかいけい、' + totalAmount + 'えん です';
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'ja-JP';
+                u.rate = 0.9;
+                u.volume = 1.0;
+                speechSynthesis.speak(u);
+            } catch (e) { }
+        }
 
-    // お支払い画面を閉じる
-    paymentScreen.style.display = 'none';
+        // ===== リセット（つぎの人） =====
+        async function resetApp() {
+            // 読み上げ
+            try {
+                speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance('ありがとうございました');
+                u.lang = 'ja-JP';
+                u.rate = 0.9;
+                u.volume = 1.0;
+                speechSynthesis.speak(u);
+            } catch (e) { }
 
-    // スキャン再開
-    startScanner();
-  }
-</script>
+            // 状態リセット
+            totalAmount = 0;
+            scanCount = 0;
+            lastScanTime = 0;
+
+            // 表示リセット
+            totalDisplay.textContent = '0円';
+            countDisplay.textContent = '0個';
+            payBtn.disabled = true;
+            cancelBtn.disabled = true;
+            scanMsg.textContent = 'バーコードをかざしてください';
+
+            // お支払い画面を閉じる
+            paymentScreen.style.display = 'none';
+
+            // スキャン再開
+            startScanner();
+        }
+    </script>
 
 </body>
+
 </html>
