@@ -525,103 +525,51 @@
             }
         }
 
-        // ===== 音声リスト読み込み待ち =====
-        let voicesReady = false;
-        let voicesList = [];
-
-        function loadVoices() {
-            voicesList = speechSynthesis.getVoices();
-            if (voicesList.length > 0) {
-                voicesReady = true;
-            }
-        }
-        loadVoices();
-        if ('onvoiceschanged' in speechSynthesis) {
-            speechSynthesis.onvoiceschanged = loadVoices;
-        }
-
-        // ===== 共通の読み上げ関数（voices待ち対応） =====
+        // ===== 共通の読み上げ関数 =====
+        // ★ iOS対策のポイント
+        //   ・u.voice は指定しない（未ダウンロードの拡張音声を掴むと無音で失敗するため）
+        //   ・cancel() の直後に speak() すると無視されることがあるので少し間をあける
+        //   ・内部的に paused 状態になっていることがあるので resume() を呼ぶ
+        //   ・それでも始まらなければ1回だけリトライする
         function speak(text, rate) {
             if (!('speechSynthesis' in window)) return;
 
-            const doSpeak = () => {
+            const utter = (isRetry) => {
                 try {
-                    speechSynthesis.cancel();
                     const u = new SpeechSynthesisUtterance(text);
-                    u.lang = 'ja-JP';
+                    u.lang = 'ja-JP';       // ★ lang だけ指定（voiceは触らない）
                     u.rate = rate || 1.0;
                     u.volume = 1.0;
-
-                    // 日本語ボイスが取得できていれば明示的に指定（iOSでの無反応対策）
-                    const jaVoice = voicesList.find(v => v.lang === 'ja-JP') ||
-                        voicesList.find(v => v.lang && v.lang.startsWith('ja'));
-                    if (jaVoice) u.voice = jaVoice;
+                    u.pitch = 1.0;
 
                     speechSynthesis.speak(u);
+
+                    // 始まらなかったら1回だけやり直す
+                    if (!isRetry) {
+                        setTimeout(() => {
+                            if (!speechSynthesis.speaking && !speechSynthesis.pending) {
+                                try { speechSynthesis.resume(); } catch (e) { }
+                                utter(true);
+                            }
+                        }, 350);
+                    }
                 } catch (e) {
                     console.warn('Speech error:', e);
                 }
             };
 
-            if (voicesReady || voicesList.length > 0) {
-                doSpeak();
-            } else {
-                // voicesがまだ来ていなければ少し待ってリトライ（iOS対策）
-                let tries = 0;
-                const retry = setInterval(() => {
-                    tries++;
-                    voicesList = speechSynthesis.getVoices();
-                    if (voicesList.length > 0 || tries > 10) {
-                        clearInterval(retry);
-                        doSpeak();
-                    }
-                }, 100);
-            }
-        }
-
-        // ===== 音声読み上げ（金額）※デバッグ表示付き =====
-        function speakPrice() {
-            if (!('speechSynthesis' in window)) {
-                scanMsg.textContent = '❌ speechSynthesis 非対応';
-                return;
-            }
-
-            const v = speechSynthesis.getVoices();
-            const jaCount = v.filter(x => x.lang && x.lang.startsWith('ja')).length;
-
             try {
                 speechSynthesis.cancel();
-                const u = new SpeechSynthesisUtterance('ひゃくじゅうえん');
-                u.lang = 'ja-JP';
-                u.rate = 1.0;
-                u.volume = 1.0;
+                try { speechSynthesis.resume(); } catch (e) { }
+            } catch (e) { }
 
-                const jaVoice = v.find(x => x.lang === 'ja-JP') ||
-                    v.find(x => x.lang && x.lang.startsWith('ja'));
-                if (jaVoice) u.voice = jaVoice;
+            // cancel直後の speak は握りつぶされることがあるため一拍おく
+            setTimeout(() => utter(false), 120);
+        }
 
-                u.onstart = () => {
-                    scanMsg.textContent = '🔊 開始 v:' + v.length + ' ja:' + jaCount +
-                        ' (' + (jaVoice ? jaVoice.name : 'なし') + ')';
-                };
-                u.onend = () => {
-                    scanMsg.textContent = '✅ 終了 v:' + v.length + ' ja:' + jaCount;
-                };
-                u.onerror = (e) => {
-                    scanMsg.textContent = '❌ error:' + e.error + ' v:' + v.length + ' ja:' + jaCount;
-                };
-
-                speechSynthesis.speak(u);
-
-                setTimeout(() => {
-                    if (!speechSynthesis.speaking && !speechSynthesis.pending) {
-                        scanMsg.textContent = '⚠️ 無反応 v:' + v.length + ' ja:' + jaCount +
-                            ' paused:' + speechSynthesis.paused;
-                    }
-                }, 400);
-            } catch (e) {
-                scanMsg.textContent = '❌ 例外:' + e.message;
-            }
+        // ===== 音声読み上げ（金額） =====
+        function speakPrice() {
+            speak('ひゃくじゅうえん', 1.0);
         }
 
         // ===== キャンセル（1点取り消し） =====
