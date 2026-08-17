@@ -400,10 +400,12 @@
                 console.warn('AudioContext init failed:', e);
             }
 
-            // Speech API の初期化（iOS対策：ユーザー操作起点で呼ぶ、voices読み込みのトリガーにもなる）
+            // Speech API の初期化（iOS対策：ユーザー操作起点で呼ぶ）
+            // ★ 空文字だとiOSでキューが詰まることがあるため、実テキストを音量0で発話する
             try {
-                loadVoices();
-                const u = new SpeechSynthesisUtterance('');
+                speechSynthesis.getVoices();
+                const u = new SpeechSynthesisUtterance('あ');
+                u.lang = 'ja-JP';
                 u.volume = 0;
                 speechSynthesis.speak(u);
             } catch (e) {
