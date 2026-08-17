@@ -526,14 +526,31 @@
 
         // ===== 音声読み上げ（Web Speech API） =====
         function speakPrice() {
+            if (!('speechSynthesis' in window)) {
+                scanMsg.textContent = '❌ speechSynthesis 非対応';
+                return;
+            }
             try {
                 speechSynthesis.cancel();
                 const u = new SpeechSynthesisUtterance('ひゃくじゅうえん');
                 u.lang = 'ja-JP';
                 u.rate = 1.0;
                 u.volume = 1.0;
+
+                u.onstart = () => { scanMsg.textContent = '🔊 読み上げ開始'; };
+                u.onend = () => { scanMsg.textContent = scanCount + '点目をスキャンしました'; };
+                u.onerror = (e) => { scanMsg.textContent = '❌ error: ' + e.error; };
+
                 speechSynthesis.speak(u);
+
+                // 300ms後に何も始まっていなければ状態を表示（デバッグ用）
+                setTimeout(() => {
+                    if (!speechSynthesis.speaking && !speechSynthesis.pending) {
+                        scanMsg.textContent = '⚠️ speak無反応 (voices:' + speechSynthesis.getVoices().length + ')';
+                    }
+                }, 300);
             } catch (e) {
+                scanMsg.textContent = '❌ 例外: ' + e.message;
                 console.warn('Speech error:', e);
             }
         }
