@@ -367,8 +367,12 @@
         let scanCount = 0;
         let html5QrCode = null;
         let isScanning = false;
-        let lastScanTime = 0;
         let audioCtx = null;
+
+        // ===== 連続スキャン抑制用 =====
+        let isCooldown = false;
+        let cooldownTimer = null;
+        const SCAN_INTERVAL = 2000; // ★ スキャン後、次を受け付けるまでの間隔（ミリ秒）
 
         // ===== 要素取得 =====
         const startScreen = document.getElementById('start-screen');
@@ -388,11 +392,9 @@
             // AudioContext を初期化（iOS対策：ユーザー操作起点で作成）
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                // iOS では resume が必要
                 if (audioCtx.state === 'suspended') {
                     await audioCtx.resume();
                 }
-                // ダミー音を再生してロック解除
                 playBeep(0.01);
             } catch (e) {
                 console.warn('AudioContext init failed:', e);
@@ -419,48 +421,55 @@
         async function startScanner() {
             if (html5QrCode) {
                 try { await html5QrCode.stop(); } catch (e) { }
-                html5QrCode.clear();
+                try { html5QrCode.clear(); } catch (e) { }
             }
 
-            html5QrCode = new Html5Qrcode('reader');
+            // ★ ネイティブのBarcodeDetectorが使える端末では自動で使う（かなり寛容な判定になる）
+            html5QrCode = new Html5Qrcode('reader', {
+                verbose: false,
+                experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+            });
 
             const config = {
-                fps: 10,
-                qrbox: { width: 280, height: 120 },
-                aspectRatio: 1.0,
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.EAN_8,
-                    Html5QrcodeSupportedFormats.UPC_A,
-                    Html5QrcodeSupportedFormats.UPC_E,
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.CODE_39,
-                    Html5QrcodeSupportedFormats.QR_CODE,
-                    Html5QrcodeSupportedFormats.ITF,
-                ]
+                fps: 25,             // ★ 1秒あたりの判定回数を増やして反応しやすくする
+                // ★ qrbox を指定しない = 映像全体をスキャン対象にする（枠に収めなくても反応）
+                disableFlip: false,  // ★ 反転して映ったバーコードも読み取る
+                videoConstraints: {
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    advanced: [{ focusMode: 'continuous' }] // 対応端末では連続オートフォーカス
+                }
             };
 
             try {
-                await html5QrCode.start(
-                    { facingMode: 'environment' },
-                    config,
-                    onScanSuccess,
-                    () => { } // エラーは無視
-                );
+                await html5QrCode.start({ facingMode: 'environment' }, config, onScanSuccess, () => { });
                 isScanning = true;
                 scanMsg.textContent = 'バーコードをかざしてください';
             } catch (err) {
-                console.error('カメラ起動エラー:', err);
-                scanMsg.textContent = 'カメラを起動できませんでした';
+                // videoConstraints が通らない端末向けのフォールバック
+                try {
+                    await html5QrCode.start(
+                        { facingMode: 'environment' },
+                        { fps: 20, disableFlip: false },
+                        onScanSuccess, () => { }
+                    );
+                    isScanning = true;
+                    scanMsg.textContent = 'バーコードをかざしてください';
+                } catch (err2) {
+                    console.error('カメラ起動エラー:', err2);
+                    scanMsg.textContent = 'カメラを起動できませんでした';
+                }
             }
         }
 
         // ===== スキャン成功時 =====
         function onScanSuccess(decodedText, decodedResult) {
-            // 連続スキャン防止（1.5秒以内は無視）
-            const now = Date.now();
-            if (now - lastScanTime < 1500) return;
-            lastScanTime = now;
+            if (isCooldown) return;
+            isCooldown = true;
+
+            // ★ 判定だけ一時停止（映像は流したまま）。連打的な反応を防ぐ
+            try { html5QrCode.pause(false); } catch (e) { }
 
             // 金額加算
             scanCount++;
@@ -487,6 +496,16 @@
             setTimeout(() => {
                 speakPrice();
             }, 300);
+
+            // ★ 一定時間後に判定を再開
+            clearTimeout(cooldownTimer);
+            cooldownTimer = setTimeout(() => {
+                isCooldown = false;
+                if (isScanning) {
+                    try { html5QrCode.resume(); } catch (e) { }
+                    scanMsg.textContent = 'つぎの商品をどうぞ';
+                }
+            }, SCAN_INTERVAL);
         }
 
         // ===== ピッ音（Web Audio API） =====
@@ -551,6 +570,10 @@
 
         // ===== お支払い =====
         async function showPayment() {
+            // クールダウンタイマーを止める
+            clearTimeout(cooldownTimer);
+            isCooldown = false;
+
             // スキャン停止
             if (html5QrCode && isScanning) {
                 try {
@@ -578,6 +601,10 @@
 
         // ===== リセット（つぎの人） =====
         async function resetApp() {
+            // クールダウンタイマーを止める
+            clearTimeout(cooldownTimer);
+            isCooldown = false;
+
             // 読み上げ
             try {
                 speechSynthesis.cancel();
@@ -591,7 +618,6 @@
             // 状態リセット
             totalAmount = 0;
             scanCount = 0;
-            lastScanTime = 0;
 
             // 表示リセット
             totalDisplay.textContent = '0円';
