@@ -400,8 +400,9 @@
                 console.warn('AudioContext init failed:', e);
             }
 
-            // Speech API の初期化（iOS対策：ユーザー操作起点で呼ぶ）
+            // Speech API の初期化（iOS対策：ユーザー操作起点で呼ぶ、voices読み込みのトリガーにもなる）
             try {
+                loadVoices();
                 const u = new SpeechSynthesisUtterance('');
                 u.volume = 0;
                 speechSynthesis.speak(u);
@@ -524,35 +525,63 @@
             }
         }
 
-        // ===== 音声読み上げ（Web Speech API） =====
-        function speakPrice() {
-            if (!('speechSynthesis' in window)) {
-                scanMsg.textContent = '❌ speechSynthesis 非対応';
-                return;
+        // ===== 音声リスト読み込み待ち =====
+        let voicesReady = false;
+        let voicesList = [];
+
+        function loadVoices() {
+            voicesList = speechSynthesis.getVoices();
+            if (voicesList.length > 0) {
+                voicesReady = true;
             }
-            try {
-                speechSynthesis.cancel();
-                const u = new SpeechSynthesisUtterance('ひゃくじゅうえん');
-                u.lang = 'ja-JP';
-                u.rate = 1.0;
-                u.volume = 1.0;
+        }
+        loadVoices();
+        if ('onvoiceschanged' in speechSynthesis) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
 
-                u.onstart = () => { scanMsg.textContent = '🔊 読み上げ開始'; };
-                u.onend = () => { scanMsg.textContent = scanCount + '点目をスキャンしました'; };
-                u.onerror = (e) => { scanMsg.textContent = '❌ error: ' + e.error; };
+        // ===== 共通の読み上げ関数（voices待ち対応） =====
+        function speak(text, rate) {
+            if (!('speechSynthesis' in window)) return;
 
-                speechSynthesis.speak(u);
+            const doSpeak = () => {
+                try {
+                    speechSynthesis.cancel();
+                    const u = new SpeechSynthesisUtterance(text);
+                    u.lang = 'ja-JP';
+                    u.rate = rate || 1.0;
+                    u.volume = 1.0;
 
-                // 300ms後に何も始まっていなければ状態を表示（デバッグ用）
-                setTimeout(() => {
-                    if (!speechSynthesis.speaking && !speechSynthesis.pending) {
-                        scanMsg.textContent = '⚠️ speak無反応 (voices:' + speechSynthesis.getVoices().length + ')';
+                    // 日本語ボイスが取得できていれば明示的に指定（iOSでの無反応対策）
+                    const jaVoice = voicesList.find(v => v.lang === 'ja-JP') ||
+                        voicesList.find(v => v.lang && v.lang.startsWith('ja'));
+                    if (jaVoice) u.voice = jaVoice;
+
+                    speechSynthesis.speak(u);
+                } catch (e) {
+                    console.warn('Speech error:', e);
+                }
+            };
+
+            if (voicesReady || voicesList.length > 0) {
+                doSpeak();
+            } else {
+                // voicesがまだ来ていなければ少し待ってリトライ（iOS対策）
+                let tries = 0;
+                const retry = setInterval(() => {
+                    tries++;
+                    voicesList = speechSynthesis.getVoices();
+                    if (voicesList.length > 0 || tries > 10) {
+                        clearInterval(retry);
+                        doSpeak();
                     }
-                }, 300);
-            } catch (e) {
-                scanMsg.textContent = '❌ 例外: ' + e.message;
-                console.warn('Speech error:', e);
+                }, 100);
             }
+        }
+
+        // ===== 音声読み上げ（金額） =====
+        function speakPrice() {
+            speak('ひゃくじゅうえん', 1.0);
         }
 
         // ===== キャンセル（1点取り消し） =====
@@ -599,15 +628,8 @@
             paymentScreen.style.display = 'flex';
 
             // 合計を読み上げ
-            try {
-                speechSynthesis.cancel();
-                const text = 'おかいけい、' + totalAmount + 'えん です';
-                const u = new SpeechSynthesisUtterance(text);
-                u.lang = 'ja-JP';
-                u.rate = 0.9;
-                u.volume = 1.0;
-                speechSynthesis.speak(u);
-            } catch (e) { }
+            const text = 'おかいけい、' + totalAmount + 'えん です';
+            speak(text, 0.9);
         }
 
         // ===== リセット（つぎの人） =====
@@ -617,14 +639,7 @@
             isCooldown = false;
 
             // 読み上げ
-            try {
-                speechSynthesis.cancel();
-                const u = new SpeechSynthesisUtterance('ありがとうございました');
-                u.lang = 'ja-JP';
-                u.rate = 0.9;
-                u.volume = 1.0;
-                speechSynthesis.speak(u);
-            } catch (e) { }
+            speak('ありがとうございました', 0.9);
 
             // 状態リセット
             totalAmount = 0;
