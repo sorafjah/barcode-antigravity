@@ -468,9 +468,6 @@
             if (isCooldown) return;
             isCooldown = true;
 
-            // ★ 判定だけ一時停止（映像は流したまま）。連打的な反応を防ぐ
-            try { html5QrCode.pause(false); } catch (e) { }
-
             // 金額加算
             scanCount++;
             totalAmount += 110;
@@ -501,10 +498,7 @@
             clearTimeout(cooldownTimer);
             cooldownTimer = setTimeout(() => {
                 isCooldown = false;
-                if (isScanning) {
-                    try { html5QrCode.resume(); } catch (e) { }
-                    scanMsg.textContent = 'つぎの商品をどうぞ';
-                }
+                scanMsg.textContent = 'つぎの商品をどうぞ';
             }, SCAN_INTERVAL);
         }
 
