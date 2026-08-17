@@ -579,9 +579,49 @@
             }
         }
 
-        // ===== 音声読み上げ（金額） =====
+        // ===== 音声読み上げ（金額）※デバッグ表示付き =====
         function speakPrice() {
-            speak('ひゃくじゅうえん', 1.0);
+            if (!('speechSynthesis' in window)) {
+                scanMsg.textContent = '❌ speechSynthesis 非対応';
+                return;
+            }
+
+            const v = speechSynthesis.getVoices();
+            const jaCount = v.filter(x => x.lang && x.lang.startsWith('ja')).length;
+
+            try {
+                speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance('ひゃくじゅうえん');
+                u.lang = 'ja-JP';
+                u.rate = 1.0;
+                u.volume = 1.0;
+
+                const jaVoice = v.find(x => x.lang === 'ja-JP') ||
+                    v.find(x => x.lang && x.lang.startsWith('ja'));
+                if (jaVoice) u.voice = jaVoice;
+
+                u.onstart = () => {
+                    scanMsg.textContent = '🔊 開始 v:' + v.length + ' ja:' + jaCount +
+                        ' (' + (jaVoice ? jaVoice.name : 'なし') + ')';
+                };
+                u.onend = () => {
+                    scanMsg.textContent = '✅ 終了 v:' + v.length + ' ja:' + jaCount;
+                };
+                u.onerror = (e) => {
+                    scanMsg.textContent = '❌ error:' + e.error + ' v:' + v.length + ' ja:' + jaCount;
+                };
+
+                speechSynthesis.speak(u);
+
+                setTimeout(() => {
+                    if (!speechSynthesis.speaking && !speechSynthesis.pending) {
+                        scanMsg.textContent = '⚠️ 無反応 v:' + v.length + ' ja:' + jaCount +
+                            ' paused:' + speechSynthesis.paused;
+                    }
+                }, 400);
+            } catch (e) {
+                scanMsg.textContent = '❌ 例外:' + e.message;
+            }
         }
 
         // ===== キャンセル（1点取り消し） =====
