@@ -527,21 +527,6 @@
             }
         }
 
-        // ===== 【iOS対策】speechSynthesisが使用中に固まるバグへのkeep-alive =====
-        // iOS/一部Safariでは、speechSynthesisを何度か使ううちに
-        // エラーも出さず無反応になることがある。定期的にpause/resumeして
-        // エンジンを起こしておくことで固まりにくくする。
-        if ('speechSynthesis' in window) {
-            setInterval(() => {
-                try {
-                    if (!speechSynthesis.speaking) {
-                        speechSynthesis.pause();
-                        speechSynthesis.resume();
-                    }
-                } catch (e) { }
-            }, 5000);
-        }
-
         // ===== 共通の読み上げ関数 =====
         // ★ iOS対策のポイント
         //   ・u.voice は指定しない（未ダウンロードの拡張音声を掴むと無音で失敗するため）
